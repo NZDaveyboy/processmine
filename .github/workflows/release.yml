@@ -1,0 +1,81 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write  # for GitHub release
+  pages: write     # for pkgdown deploy
+  id-token: write  # for PyPI trusted publishing
+
+jobs:
+  publish-python:
+    name: Publish Python package to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/processmine-ml
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build wheel + sdist
+        run: |
+          pip install build
+          cd python && python -m build
+
+      - name: Publish to PyPI (trusted publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist/
+
+  publish-r-docs:
+    name: Deploy pkgdown site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.4.0'
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: R
+          extra-packages: any::pkgdown
+          needs: website
+
+      - name: Build pkgdown site
+        run: |
+          cd R
+          Rscript -e 'pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)'
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          clean: false
+          branch: gh-pages
+          folder: R/docs
+
+  github-release:
+    name: Create GitHub release
+    needs: [publish-python]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}

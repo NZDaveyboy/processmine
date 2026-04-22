@@ -1,0 +1,51 @@
+{
+  "name": "processmine",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "reditorsupport.r",
+        "rdebugger.r-debugger",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-toolsai.jupyter",
+        "quarto.quarto",
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "r.rterm.linux": "/usr/local/bin/radian",
+        "r.bracketedPaste": true,
+        "r.sessionWatcher": true,
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        },
+        "[r]": {
+          "editor.formatOnSave": true
+        },
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "remoteEnv": {
+    "OMP_NUM_THREADS": "1",
+    "RETICULATE_PYTHON": "/usr/bin/python3.11"
+  },
+  "forwardPorts": [8888, 4321],
+  "portsAttributes": {
+    "8888": { "label": "Jupyter" },
+    "4321": { "label": "pkgdown preview" }
+  },
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  }
+}
