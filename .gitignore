@@ -1,0 +1,47 @@
+# R -------------------------------------------------------------------------
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+R/*.o
+R/*.so
+R/*.dll
+R/src/*.o
+R/src/*.so
+R/src/*.dll
+
+# renv — keep renv.lock and renv/activate.R; ignore the library itself
+renv/library/
+renv/staging/
+renv/sandbox/
+renv/python/
+
+# R CMD check artefacts
+*.Rcheck/
+*_cache/
+
+# Python --------------------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.whl
+
+# Generated Parquet outputs (sample_logs/ fixtures are committed explicitly)
+*.parquet
+
+# Notebooks -----------------------------------------------------------------
+.ipynb_checkpoints/
+
+# OS ------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
