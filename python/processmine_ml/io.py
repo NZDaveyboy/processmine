@@ -217,8 +217,15 @@ def _dict_col_to_json_array(series: pd.Series) -> pa.Array:
         if val is None or (isinstance(val, float) and pd.isna(val)):
             out.append(None)
         else:
-            out.append(json.dumps({str(k): str(v) for k, v in (val.items() if isinstance(val, dict) else val)}, sort_keys=True))
+            pairs = val.items() if isinstance(val, dict) else val
+            out.append(json.dumps({str(k): str(v) for k, v in pairs}, sort_keys=True))
     return pa.array(out, type=pa.string())
+
+
+def _json_to_dict(x: object) -> dict[str, str]:
+    if isinstance(x, str):
+        return dict(json.loads(x))  # type: ignore[arg-type]
+    return {}
 
 
 # ---- read_eventlog_parquet ---------------------------------------------------
@@ -247,8 +254,6 @@ def read_eventlog_parquet(path: str | Path) -> pd.DataFrame:
     # Deserialise JSON string attr columns back to Python dicts
     for attr_col in ("case_attrs", "event_attrs"):
         if attr_col in df.columns:
-            df[attr_col] = df[attr_col].apply(
-                lambda x: json.loads(x) if isinstance(x, str) else ({} if x is None else x)
-            )
+            df[attr_col] = df[attr_col].apply(_json_to_dict)
 
     return validate_eventlog(df)

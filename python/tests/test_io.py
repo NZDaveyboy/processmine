@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pathlib
-import tempfile
 
 import pandas as pd
 import pyarrow as pa

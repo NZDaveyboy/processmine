@@ -1,6 +1,7 @@
 #' @importFrom rlang abort
 #' @importFrom arrow read_parquet write_parquet as_arrow_table
 #' @importFrom tibble tibble as_tibble
+#' @importFrom jsonlite toJSON fromJSON
 NULL
 
 SCHEMA_VERSION <- "1.0"
@@ -181,8 +182,9 @@ write_eventlog_parquet <- function(log, path) {
 
 .attrs_to_json <- function(x) {
   if (length(x) == 0) return("{}")
-  pairs <- paste0('"', names(x), '":"', gsub('"', '\\\\"', x), '"')
-  paste0("{", paste(pairs, collapse = ","), "}")
+  # Accept both named lists and named character vectors
+  x <- vapply(x, function(v) as.character(v)[1L], character(1L))
+  as.character(jsonlite::toJSON(as.list(x), auto_unbox = TRUE))
 }
 
 # ---- read_eventlog_parquet ---------------------------------------------------
@@ -232,15 +234,7 @@ read_eventlog_parquet <- function(path) {
 
 .json_to_attrs <- function(x) {
   if (is.null(x) || identical(x, "{}") || identical(x, "")) return(character(0))
-  # Minimal JSON object parser for {"key":"value",...}
-  # Strips outer braces, splits on '","', extracts key/value pairs
-  x2    <- sub("^\\{", "", sub("\\}$", "", x))
-  pairs <- strsplit(x2, '","')[[1]]
-  out   <- character(0)
-  for (p in pairs) {
-    p   <- gsub('^"|"$', "", p)
-    kv  <- strsplit(p, '":', fixed = TRUE)[[1]]
-    if (length(kv) == 2) out[kv[1]] <- gsub('\\\\"', '"', kv[2])
-  }
-  out
+  obj <- jsonlite::fromJSON(x, simplifyVector = TRUE)
+  if (length(obj) == 0) return(character(0))
+  vapply(obj, function(v) as.character(v)[1L], character(1L))
 }
