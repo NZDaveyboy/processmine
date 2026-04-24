@@ -19,7 +19,7 @@ activities <- c("submit", "approve", "close")
 base_time  <- as.POSIXct("2024-03-01 08:00:00", tz = "UTC")
 
 rows <- do.call(rbind, lapply(cases, function(cid) {
-  acts <- sample(activities, size = sample(2:4, 1), replace = FALSE)
+  acts <- sample(activities, size = sample(2:3, 1), replace = FALSE)
   n    <- length(acts)
   ts   <- base_time + cumsum(sample(600:3600, n))
   st   <- ts - sample(60:300, n)
