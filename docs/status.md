@@ -74,13 +74,14 @@ Track per-capability progress. Update this file when a capability is added, chan
 | `write_eventlog_parquet()` | `io.py` | ✓ | JSON-encoded attrs |
 | `read_eventlog_parquet()` | `io.py` | ✓ | Version guard |
 
-### ML (Milestone 3+)
+### ML (Milestone 3)
 
-| Capability | Status |
-|---|---|
-| Anomaly detection | ✗ |
-| Drift detection | ✗ |
-| Next-activity prediction | ✗ |
+| Capability | File | Status | Notes |
+|---|---|---|---|
+| `extract_case_features()` | `anomaly.py` | ✓ | Throughput, event count, activity/resource diversity, resource entropy |
+| `detect_anomalies()` | `anomaly.py` | ✓ | Isolation Forest; configurable contamination, feature subset, random state |
+| Concept drift detection | — | ✗ | ADWIN on activity distributions; planned |
+| Next-activity prediction | — | ✗ | LSTM sequence model; planned |
 
 ---
 

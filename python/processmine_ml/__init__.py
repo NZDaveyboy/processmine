@@ -1,5 +1,6 @@
 """processmine_ml — Python ML layer for the processmine process-mining library."""
 
+from processmine_ml.anomaly import detect_anomalies, extract_case_features
 from processmine_ml.io import (
     read_eventlog_parquet,
     read_xes,
@@ -12,4 +13,6 @@ __all__ = [
     "validate_eventlog",
     "write_eventlog_parquet",
     "read_eventlog_parquet",
+    "extract_case_features",
+    "detect_anomalies",
 ]
