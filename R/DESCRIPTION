@@ -4,8 +4,9 @@ Version: 0.0.1
 Authors@R: person("Dave", "Mason", role = c("aut", "cre"),
                    email = "davidmason720@gmail.com")
 Description: R interface to the processmine event-log schema: read/write XES and
-    Parquet files, validate the canonical schema, and interoperate with the
-    Python ML layer via shared Parquet files.
+    Parquet files, validate the canonical schema, discover process models,
+    check conformance, analyse performance, and interoperate with the Python
+    ML layer via shared Parquet files.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
