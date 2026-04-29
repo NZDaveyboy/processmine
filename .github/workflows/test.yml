@@ -64,7 +64,7 @@ jobs:
           cache-dependency-path: python/pyproject.toml
 
       - name: Install package + dev deps
-        run: pip install -e "./python[dev]"
+        run: pip install -e "./python[dev,ml]"
 
       - name: ruff
         run: ruff check python/

@@ -82,7 +82,7 @@ Track per-capability progress. Update this file when a capability is added, chan
 | `detect_anomalies()` | `anomaly.py` | ✓ | Isolation Forest; configurable contamination, feature subset, random state |
 | `extract_case_stream()` | `drift.py` | ✓ | Time-ordered per-case metric stream |
 | `detect_drift()` | `drift.py` | ✓ | ADWIN on throughput, event count, activity frequency |
-| Next-activity prediction | — | ✗ | LSTM sequence model; planned |
+| `NextActivityPredictor` | `prediction.py` | ✓ | LSTM; fit/predict/evaluate; optional dep `pip install processmine-ml[ml]` |
 
 ---
 

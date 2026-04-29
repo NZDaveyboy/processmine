@@ -2,6 +2,7 @@
 
 from processmine_ml.anomaly import detect_anomalies, extract_case_features
 from processmine_ml.drift import detect_drift, extract_case_stream
+from processmine_ml.prediction import NextActivityPredictor
 from processmine_ml.io import (
     read_eventlog_parquet,
     read_xes,
@@ -18,4 +19,5 @@ __all__ = [
     "detect_anomalies",
     "extract_case_stream",
     "detect_drift",
+    "NextActivityPredictor",
 ]
