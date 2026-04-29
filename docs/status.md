@@ -20,6 +20,7 @@ Track per-capability progress. Update this file when a capability is added, chan
 |---|---|---|---|
 | `validate_eventlog()` | `io.R` | ✓ | Enforces all v1 schema invariants |
 | `read_xes()` | `io.R` | ✓ | XES standard key mappings, case/event attrs |
+| `read_csv_eventlog()` | `io.R` | ✓ | Column mapping, tz coercion, attrs folding |
 | `write_eventlog_parquet()` | `io.R` | ✓ | JSON-encoded attrs, schema_version metadata |
 | `read_eventlog_parquet()` | `io.R` | ✓ | Version guard, UTC restoration |
 | Cross-language round-trip | `scripts/roundtrip_check.R` | ✓ | R → Parquet → Python → Parquet → R, all 8 columns |
@@ -79,6 +80,7 @@ Track per-capability progress. Update this file when a capability is added, chan
 |---|---|---|---|
 | `validate_eventlog()` | `io.py` | ✓ | Mirrors R validator |
 | `read_xes()` | `io.py` | ✓ | stdlib ElementTree parser |
+| `read_csv_eventlog()` | `io.py` | ✓ | Column mapping, tz coercion, attrs folding |
 | `write_eventlog_parquet()` | `io.py` | ✓ | JSON-encoded attrs |
 | `read_eventlog_parquet()` | `io.py` | ✓ | Version guard |
 

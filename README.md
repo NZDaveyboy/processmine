@@ -208,9 +208,10 @@ roundtrip    R bridge tests + R notebook render
 
 ---
 
-## Architecture
+## Documentation
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full schema reference, cross-language contract, and design decisions.
+- [`docs/user_guide.md`](docs/user_guide.md) — full usage guide: installation, data ingestion, all capabilities, end-to-end example, troubleshooting
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — schema reference, cross-language contract, design decisions
 
 ---
 
