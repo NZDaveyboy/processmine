@@ -96,6 +96,15 @@ Track per-capability progress. Update this file when a capability is added, chan
 
 ---
 
+## Notebooks
+
+| File | Description | Status |
+|---|---|---|
+| `notebooks/01_process_analysis.Rmd` | Full R pipeline: load XES → DFG → heuristics → conformance → performance → variants → write Parquet | ✓ |
+| `notebooks/02_ml_analysis.ipynb` | Python ML: load log → feature extraction → anomaly detection → ADWIN drift → LSTM prediction | ✓ |
+
+---
+
 ## Sample data
 
 | File | Description | Status |

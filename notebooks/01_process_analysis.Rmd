@@ -1,0 +1,268 @@
+---
+title: "Processmine — Process Analysis Walkthrough"
+subtitle: "Discovery · Conformance · Performance · Variants"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    highlight: tango
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width  = 8,
+  fig.height = 4
+)
+```
+
+## Setup
+
+Load the processmine R package. If you have it installed, replace the `load_all` call with `library(processmine)`.
+
+```{r load}
+suppressPackageStartupMessages({
+  devtools::load_all("../R", quiet = TRUE)
+})
+```
+
+---
+
+## 1 · Read and validate the event log
+
+The sample log is a synthetic order-to-cash process: 15 cases covering three
+path variants — happy path (no credit check), credit-checked approvals, and
+rejections.
+
+```{r read-xes}
+log <- read_xes("../data/sample_logs/bpi2012_sample.xes")
+
+cat("Cases  :", length(unique(log$case_id)), "\n")
+cat("Events :", nrow(log), "\n")
+cat("Period :", format(min(log$timestamp)), "→", format(max(log$timestamp)), "\n")
+```
+
+```{r log-head}
+head(log[, c("case_id", "activity", "timestamp", "resource", "lifecycle")])
+```
+
+```{r activity-counts}
+sort(table(log$activity), decreasing = TRUE)
+```
+
+---
+
+## 2 · Process Discovery
+
+### 2.1 Directly-Follows Graph
+
+The DFG counts how many times activity B immediately follows activity A within
+the same case. `freq` is relative to total events.
+
+```{r dfg}
+dfg <- discover_dfg(log)
+
+cat("Activities      :", paste(dfg$activities, collapse = ", "), "\n")
+cat("Start activities:", paste(dfg$start_activities, collapse = ", "), "\n")
+cat("End activities  :", paste(dfg$end_activities,   collapse = ", "), "\n\n")
+
+dfg$edges
+```
+
+Visualise the edge weights with a simple dot plot.
+
+```{r dfg-plot}
+edges <- dfg$edges
+edges$label <- paste0(edges$from, "\n→ ", edges$to)
+
+par(mar = c(5, 10, 2, 2))
+barplot(
+  rev(edges$n),
+  names.arg = rev(edges$label),
+  horiz     = TRUE,
+  las       = 1,
+  col       = "#4e79a7",
+  xlab      = "Edge count",
+  main      = "DFG — directly-follows edge counts"
+)
+```
+
+### 2.2 Heuristics Net
+
+The heuristics miner retains only edges whose dependency measure
+`dep(A,B) = (|A→B| − |B→A|) / (|A→B| + |B→A| + 1)` meets a threshold.
+Low-frequency noise edges are filtered out.
+
+```{r heuristics}
+hnet <- discover_heuristics(log, dependency_threshold = 0.8)
+
+cat("Edges retained:", nrow(hnet$edges), "of", nrow(dfg$edges), "\n\n")
+hnet$edges[, c("from", "to", "n", "dependency")]
+```
+
+---
+
+## 3 · Conformance Checking
+
+Token replay measures how well each case follows the discovered model.
+A fitness of `1.0` means every transition in the case exists in the model.
+
+We build the reference model from the happy-path cases (OTC-001 to OTC-010)
+and then replay all 15 cases against it.
+
+```{r conformance}
+ref_cases  <- log[log$case_id %in% paste0("OTC-0", sprintf("%02d", 1:10)), ]
+ref_model  <- discover_dfg(ref_cases)
+conf       <- conformance_tokenreplay(log, ref_model)
+
+cat("Mean fitness  :", round(conf$summary$mean_fitness,   3), "\n")
+cat("Median fitness:", round(conf$summary$median_fitness, 3), "\n")
+cat("Perfect fit   :", conf$summary$n_fitting_cases, "of", conf$summary$n_cases, "cases\n")
+```
+
+```{r conformance-per-case}
+conf$per_case
+```
+
+Cases OTC-011 to OTC-013 follow the happy path after a credit check, so they
+have partial fitness (the Check Credit → Approve Order transition exists in the
+log but not in the happy-path reference model). OTC-014 and OTC-015 are
+rejected and have zero fitness against the happy-path model.
+
+```{r conformance-plot}
+pc <- conf$per_case
+pc$colour <- ifelse(pc$fitness >= 1.0, "#59a14f",
+             ifelse(pc$fitness >  0.0, "#f28e2b", "#e15759"))
+
+par(mar = c(8, 4, 3, 1))
+barplot(
+  pc$fitness,
+  names.arg = pc$case_id,
+  col       = pc$colour,
+  las       = 2,
+  ylim      = c(0, 1.1),
+  ylab      = "Fitness",
+  main      = "Token replay fitness per case",
+  border    = NA
+)
+abline(h = 1, lty = 2, col = "grey50")
+legend("bottomright",
+       fill   = c("#59a14f", "#f28e2b", "#e15759"),
+       legend = c("Perfect fit", "Partial fit", "Zero fit"),
+       bty    = "n")
+```
+
+---
+
+## 4 · Performance Analysis
+
+### 4.1 Throughput time
+
+```{r throughput}
+tp <- performance_throughput(log, unit = "hours")
+tp
+```
+
+```{r throughput-summary}
+cat("Mean throughput  :", round(mean(tp$throughput), 1), "hours\n")
+cat("Median throughput:", round(median(tp$throughput), 1), "hours\n")
+cat("Min / Max        :", round(min(tp$throughput), 1), "/",
+    round(max(tp$throughput), 1), "hours\n")
+```
+
+```{r throughput-plot}
+par(mar = c(8, 5, 3, 1))
+barplot(
+  tp$throughput,
+  names.arg = tp$case_id,
+  las       = 2,
+  col       = "#76b7b2",
+  ylab      = "Throughput (hours)",
+  main      = "Case throughput time",
+  border    = NA
+)
+```
+
+### 4.2 Bottlenecks
+
+Which transitions take the longest on average?
+
+```{r bottlenecks}
+bn <- performance_bottlenecks(log)
+bn$mean_hours <- round(bn$mean_duration_s / 3600, 1)
+bn[, c("from_activity", "to_activity", "mean_hours", "n")]
+```
+
+The longest gap is always `Issue Invoice → Receive Payment` — payment arrives
+days after invoicing, which is expected business behaviour. Everything within a
+single working day is operational throughput.
+
+### 4.3 SLA compliance
+
+Define a 7-day (168-hour) SLA for order completion.
+
+```{r sla}
+sla <- performance_sla(log, sla_spec = list(limit = 168, unit = "hours"))
+
+cat("Within SLA:", sum(sla$within_sla), "of", nrow(sla), "cases\n\n")
+sla[, c("case_id", "throughput", "within_sla")]
+```
+
+Rejected cases (OTC-014, OTC-015) are short — they close quickly — so they
+trivially meet the SLA. The few cases that breach it are the longer-running
+credit-check approvals.
+
+---
+
+## 5 · Variant Analysis
+
+```{r variants}
+v <- variants(log)
+v
+```
+
+```{r variants-plot}
+par(mar = c(3, 22, 3, 1))
+barplot(
+  rev(v$n),
+  names.arg = rev(v$variant),
+  horiz     = TRUE,
+  las       = 1,
+  col       = c("#59a14f", "#4e79a7", "#e15759"),
+  xlab      = "Case count",
+  main      = "Process variants",
+  border    = NA
+)
+```
+
+```{r rare}
+rare <- rare_paths(log, min_support = 0.15)
+cat("Rare variants (< 15% support):", nrow(rare), "\n\n")
+rare
+```
+
+---
+
+## 6 · Write to Parquet for Python ML
+
+Export the validated log so the Python notebook can pick it up for anomaly
+detection, drift monitoring, and next-activity prediction.
+
+```{r write-parquet}
+out <- "../data/sample_logs/bpi2012_sample.parquet"
+write_eventlog_parquet(log, out)
+cat("Written:", out, "\n")
+```
+
+---
+
+## Session info
+
+```{r session}
+sessionInfo()
+```
