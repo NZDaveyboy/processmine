@@ -127,7 +127,11 @@ read_xes <- function(path) {
 .xes_date <- function(node, key) {
   raw <- .xes_string(node, key, default = NA_character_)
   if (is.na(raw)) return(as.POSIXct(NA, tz = "UTC"))
-  as.POSIXct(raw, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+  # Normalise ISO 8601: strip fractional seconds, convert +HH:MM to +HHMM for %z
+  raw <- sub("\\.\\d+", "", raw)
+  raw <- sub("([+-])(\\d{2}):(\\d{2})$", "\\1\\2\\3", raw)  # +00:00 → +0000
+  raw <- sub("Z$", "+0000", raw)                              # Z → +0000
+  as.POSIXct(raw, format = "%Y-%m-%dT%H:%M:%S%z", tz = "UTC")
 }
 
 .xes_extra_attrs <- function(node, skip_keys) {

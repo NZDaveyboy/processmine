@@ -311,20 +311,20 @@ conf <- conformance_tokenreplay(log, dfg)
 
 # Summary statistics
 conf$summary
-# $fitness        0.94     # proportion of events that "fit" the model
-# $n_cases        100
-# $n_fitting      88       # cases with perfect fitness
-# $n_deviating    12
+# $mean_fitness      0.94   # mean fitness across all cases
+# $median_fitness    0.98
+# $n_cases           100
+# $n_fitting_cases    88    # cases with fitness == 1.0
 
-# Per-case fitness (sorted worst first)
+# Per-case results (4 columns)
 conf$per_case
-# A tibble: 100 × 3
-#   case_id  fitness  deviations
-#   <chr>      <dbl>       <int>
-# 1 C0042      0.333           4
-# 2 C0017      0.500           2
+# A tibble: 100 × 4
+#   case_id  transitions  fitting  fitness
+#   <chr>          <int>    <int>    <dbl>
+# 1 C0042              6        2    0.333
+# 2 C0017              4        2    0.500
 
-# Detailed diagnostics (missing tokens, remaining tokens per case)
+# Diagnostics (model type and edge count used for replay)
 conf$diagnostics
 ```
 
@@ -365,7 +365,7 @@ summary(throughput$throughput)
 hist(throughput$throughput, main = "Case throughput (hours)")
 ```
 
-`unit` options: `"secs"`, `"mins"`, `"hours"`, `"days"`.
+`unit` options: `"seconds"`, `"minutes"`, `"hours"`, `"days"`, `"weeks"`.
 
 ### Bottleneck detection
 
@@ -375,9 +375,9 @@ Which transitions take the longest on average?
 bottlenecks <- performance_bottlenecks(log)
 
 # Returns a tibble sorted by mean duration descending
-# from              to            mean_duration_s   n
-# Approve Order     Pick Items         14400        95
-# Create Order      Approve Order       3600       100
+# from_activity     to_activity      mean_duration_s   n
+# Approve Order     Pick Items              14400      95
+# Create Order      Approve Order            3600     100
 
 head(bottlenecks, 5)  # top 5 slowest transitions
 ```
@@ -390,22 +390,19 @@ How many cases breached a time limit?
 # Check whether cases completed within 48 hours
 sla <- performance_sla(log, list(limit = 48, unit = "hours"))
 
-sla$summary
-# $n_cases           100
-# $n_compliant        82
-# $compliance_rate  0.82
-# $sla_limit_hours    48
+# Returns a flat tibble — one row per case
+# A tibble: 100 × 5
+#   case_id  throughput  unit   within_sla  sla_limit
+#   <chr>         <dbl>  <chr>  <lgl>           <dbl>
+# 1 C0001           4.2  hours  TRUE               48
+# 2 C0042          72.1  hours  FALSE              48
 
-# Per-case result
-sla$per_case
-# A tibble: 100 × 3
-#   case_id  throughput_hours  sla_met
-#   <chr>               <dbl>  <lgl>
-# 1 C0001                4.2   TRUE
-# 2 C0042               72.1   FALSE
+# Summary (computed from the result)
+mean(sla$within_sla)            # compliance rate: 0.82
+sum(!sla$within_sla)            # number of breaches: 18
 
 # Cases that breached the SLA
-breaches <- sla$per_case[!sla$per_case$sla_met, ]
+breaches <- sla[!sla$within_sla, ]
 ```
 
 ---
@@ -726,7 +723,7 @@ cat("Overall fitness:", conf$summary$fitness, "\n")
 # 4. Performance
 bottlenecks <- performance_bottlenecks(log)
 sla         <- performance_sla(log, list(limit = 24, unit = "hours"))
-cat("SLA compliance:", sla$summary$compliance_rate, "\n")
+cat("SLA compliance:", mean(sla$within_sla), "\n")
 
 # 5. Variants
 v <- variants(log)
