@@ -9,6 +9,7 @@ dependencies = [
     "pyarrow>=16.0.0",
     "scikit-learn>=1.4",
     "numpy>=1.26",
+    "river>=0.21",
 ]
 
 [project.optional-dependencies]

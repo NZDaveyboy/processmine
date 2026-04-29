@@ -80,7 +80,8 @@ Track per-capability progress. Update this file when a capability is added, chan
 |---|---|---|---|
 | `extract_case_features()` | `anomaly.py` | ✓ | Throughput, event count, activity/resource diversity, resource entropy |
 | `detect_anomalies()` | `anomaly.py` | ✓ | Isolation Forest; configurable contamination, feature subset, random state |
-| Concept drift detection | — | ✗ | ADWIN on activity distributions; planned |
+| `extract_case_stream()` | `drift.py` | ✓ | Time-ordered per-case metric stream |
+| `detect_drift()` | `drift.py` | ✓ | ADWIN on throughput, event count, activity frequency |
 | Next-activity prediction | — | ✗ | LSTM sequence model; planned |
 
 ---
