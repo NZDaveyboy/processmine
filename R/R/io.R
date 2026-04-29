@@ -144,6 +144,108 @@ read_xes <- function(path) {
   out
 }
 
+# ---- read_csv_eventlog -------------------------------------------------------
+
+#' Read a CSV file into a processmine event log tibble.
+#'
+#' Maps arbitrary CSV column names to the processmine schema, parses
+#' timestamps, and calls `validate_eventlog()` before returning.
+#'
+#' @param path Path to a `.csv` file.
+#' @param case_col Name of the column containing the case identifier.
+#' @param activity_col Name of the column containing the activity name.
+#' @param timestamp_col Name of the column containing the event completion timestamp.
+#' @param start_timestamp_col Optional name of the column containing the event
+#'   start timestamp. `NULL` to omit.
+#' @param resource_col Optional name of the resource column. `NULL` to omit.
+#' @param lifecycle_col Optional name of the lifecycle column. `NULL` to omit.
+#' @param case_attrs_cols Optional character vector of column names to fold
+#'   into the `case_attrs` map. These columns are removed from the top-level
+#'   output and stored as named character vectors per event.
+#' @param event_attrs_cols Optional character vector of column names to fold
+#'   into the `event_attrs` map.
+#' @param timestamp_format `strptime`-style format string for parsing
+#'   timestamps (e.g. `"%Y-%m-%d %H:%M:%S"`). `NULL` lets R guess.
+#' @param tz Source timezone of the timestamp strings. Defaults to `"UTC"`.
+#'   Set to the actual timezone if your CSV stores local times (e.g.
+#'   `"America/New_York"`); they will be converted to UTC.
+#' @param ... Additional arguments passed to [utils::read.csv()].
+#'
+#' @return A validated tibble conforming to the processmine schema.
+#' @export
+read_csv_eventlog <- function(
+  path,
+  case_col            = "case_id",
+  activity_col        = "activity",
+  timestamp_col       = "timestamp",
+  start_timestamp_col = NULL,
+  resource_col        = NULL,
+  lifecycle_col       = NULL,
+  case_attrs_cols     = NULL,
+  event_attrs_cols    = NULL,
+  timestamp_format    = NULL,
+  tz                  = "UTC",
+  ...
+) {
+  raw <- utils::read.csv(path, stringsAsFactors = FALSE, ...)
+
+  # Check required source columns exist
+  required_src <- c(case_col, activity_col, timestamp_col)
+  optional_src <- c(start_timestamp_col, resource_col, lifecycle_col,
+                    case_attrs_cols, event_attrs_cols)
+  missing_src  <- setdiff(c(required_src, optional_src), names(raw))
+  if (length(missing_src) > 0) {
+    rlang::abort(paste0(
+      "Column(s) not found in CSV: ", paste(missing_src, collapse = ", ")
+    ))
+  }
+
+  # Build log with canonical names
+  log <- tibble::tibble(
+    case_id  = as.character(raw[[case_col]]),
+    activity = as.character(raw[[activity_col]]),
+    timestamp = .parse_csv_timestamp(raw[[timestamp_col]], timestamp_format, tz)
+  )
+
+  if (!is.null(start_timestamp_col)) {
+    log$start_timestamp <- .parse_csv_timestamp(
+      raw[[start_timestamp_col]], timestamp_format, tz
+    )
+  }
+  if (!is.null(resource_col)) {
+    log$resource <- as.character(raw[[resource_col]])
+  }
+  if (!is.null(lifecycle_col)) {
+    log$lifecycle <- as.character(raw[[lifecycle_col]])
+  }
+
+  # Fold extra columns into attrs maps
+  if (!is.null(case_attrs_cols)) {
+    log$case_attrs <- lapply(seq_len(nrow(raw)), function(i) {
+      vapply(case_attrs_cols, function(col) as.character(raw[[col]][i]), character(1))
+    })
+  }
+  if (!is.null(event_attrs_cols)) {
+    log$event_attrs <- lapply(seq_len(nrow(raw)), function(i) {
+      vapply(event_attrs_cols, function(col) as.character(raw[[col]][i]), character(1))
+    })
+  }
+
+  validate_eventlog(log)
+  log
+}
+
+.parse_csv_timestamp <- function(x, fmt, tz) {
+  parsed <- if (is.null(fmt)) {
+    as.POSIXct(x, tz = tz)
+  } else {
+    as.POSIXct(x, format = fmt, tz = tz)
+  }
+  # Convert to UTC if source tz differs
+  attr(parsed, "tzone") <- "UTC"
+  parsed
+}
+
 # ---- write_eventlog_parquet --------------------------------------------------
 
 #' Write a validated event log to a Parquet file.

@@ -167,6 +167,110 @@ def _empty_df() -> pd.DataFrame:
     return pd.DataFrame(columns=list(REQUIRED_COLS))
 
 
+# ---- read_csv_eventlog -------------------------------------------------------
+
+def read_csv_eventlog(
+    path: str | Path,
+    *,
+    case_col: str = "case_id",
+    activity_col: str = "activity",
+    timestamp_col: str = "timestamp",
+    start_timestamp_col: str | None = None,
+    resource_col: str | None = None,
+    lifecycle_col: str | None = None,
+    case_attrs_cols: list[str] | None = None,
+    event_attrs_cols: list[str] | None = None,
+    timestamp_format: str | None = None,
+    tz: str = "UTC",
+    **read_csv_kwargs: Any,
+) -> pd.DataFrame:
+    """Read a CSV file and return a validated processmine DataFrame.
+
+    Maps arbitrary CSV column names to the processmine schema, parses
+    timestamps, and calls ``validate_eventlog()`` before returning.
+
+    Parameters
+    ----------
+    path:
+        Path to the CSV file.
+    case_col:
+        Column containing the case identifier.
+    activity_col:
+        Column containing the activity name.
+    timestamp_col:
+        Column containing the event completion timestamp.
+    start_timestamp_col:
+        Optional column for event start timestamp.
+    resource_col:
+        Optional resource column.
+    lifecycle_col:
+        Optional lifecycle column.
+    case_attrs_cols:
+        Optional list of column names to fold into ``case_attrs`` dicts.
+    event_attrs_cols:
+        Optional list of column names to fold into ``event_attrs`` dicts.
+    timestamp_format:
+        ``strftime``-style format string (e.g. ``"%Y-%m-%d %H:%M:%S"``).
+        ``None`` lets pandas infer the format.
+    tz:
+        Source timezone of timestamp strings. Defaults to ``"UTC"``. Set to
+        the actual timezone if the CSV stores local times (e.g.
+        ``"America/New_York"``); they will be converted to UTC.
+    **read_csv_kwargs:
+        Extra keyword arguments forwarded to ``pandas.read_csv()``.
+    """
+    raw = pd.read_csv(str(path), dtype=str, **read_csv_kwargs)
+
+    required_src = [case_col, activity_col, timestamp_col]
+    optional_src = [
+        c for c in [start_timestamp_col, resource_col, lifecycle_col]
+        if c is not None
+    ] + (case_attrs_cols or []) + (event_attrs_cols or [])
+    missing = [c for c in required_src + optional_src if c not in raw.columns]
+    if missing:
+        raise ValueError(f"Column(s) not found in CSV: {', '.join(missing)}")
+
+    df = pd.DataFrame({
+        "case_id":  raw[case_col].astype(str),
+        "activity": raw[activity_col].astype(str),
+        "timestamp": _parse_csv_timestamps(raw[timestamp_col], timestamp_format, tz),
+    })
+
+    if start_timestamp_col is not None:
+        df["start_timestamp"] = _parse_csv_timestamps(
+            raw[start_timestamp_col], timestamp_format, tz
+        )
+    if resource_col is not None:
+        df["resource"] = raw[resource_col].astype(str)
+    if lifecycle_col is not None:
+        df["lifecycle"] = raw[lifecycle_col].astype(str)
+
+    if case_attrs_cols:
+        df["case_attrs"] = [
+            {col: str(raw[col].iloc[i]) for col in case_attrs_cols}
+            for i in range(len(raw))
+        ]
+    if event_attrs_cols:
+        df["event_attrs"] = [
+            {col: str(raw[col].iloc[i]) for col in event_attrs_cols}
+            for i in range(len(raw))
+        ]
+
+    return validate_eventlog(df)
+
+
+def _parse_csv_timestamps(
+    series: pd.Series, fmt: str | None, tz: str
+) -> pd.Series:
+    """Parse a string series to datetime64[us, UTC]."""
+    parsed = pd.to_datetime(series, format=fmt, utc=(tz == "UTC"))
+    if not hasattr(parsed.dtype, "tz"):
+        parsed = parsed.dt.tz_localize(tz)
+    if str(parsed.dtype.tz) != "UTC":
+        parsed = parsed.dt.tz_convert("UTC")
+    return parsed.dt.as_unit("us")
+
+
 # ---- write_eventlog_parquet --------------------------------------------------
 
 def write_eventlog_parquet(df: pd.DataFrame, path: str | Path) -> None:

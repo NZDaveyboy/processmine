@@ -6,6 +6,7 @@ from processmine_ml.drift import detect_drift, extract_case_stream
 from processmine_ml.prediction import NextActivityPredictor
 from processmine_ml.split import train_test_split_by_case
 from processmine_ml.io import (
+    read_csv_eventlog,
     read_eventlog_parquet,
     read_xes,
     validate_eventlog,
@@ -24,4 +25,5 @@ __all__ = [
     "NextActivityPredictor",
     "conformance_alignments",
     "train_test_split_by_case",
+    "read_csv_eventlog",
 ]
