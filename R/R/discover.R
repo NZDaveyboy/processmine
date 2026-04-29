@@ -33,7 +33,12 @@ discover_dfg <- function(log, noise_threshold = 0) {
   edges_raw <- do.call(rbind, Filter(Negate(is.null), edges_list))
 
   if (is.null(edges_raw) || nrow(edges_raw) == 0L) {
-    return(.empty_dfg())
+    acts <- sort(unique(log$activity))
+    dfg  <- .empty_dfg()
+    dfg$activities       <- acts
+    dfg$start_activities <- acts
+    dfg$end_activities   <- acts
+    return(dfg)
   }
 
   # Aggregate counts

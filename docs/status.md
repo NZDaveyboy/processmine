@@ -61,14 +61,13 @@ Track per-capability progress. Update this file when a capability is added, chan
 | `bridge_fit_predictor()` / `bridge_predict()` / `bridge_evaluate()` | `bridge.R` | ✓ | Calls Python LSTM via reticulate; requires `[ml]` |
 | `bridge_conformance_alignment()` | `bridge.R` + `align.py` | ✓ | PM4Py alignment conformance; requires `[pm4py]` |
 
-### Planned (future)
+### Splitting (Milestone 2)
 
-| Capability | Status | Notes |
-|---|---|---|
-| Alignment-based conformance | ✗ | Opt-in; wraps PM4Py via bridge.R; per-trace timeout |
-| LSTM next-activity prediction | ✗ | Python only |
-| Isolation forest anomaly detection | ✗ | Python only |
-| ADWIN concept drift detection | ✗ | Python only |
+| Capability | File | Status | Notes |
+|---|---|---|---|
+| `train_test_split_by_case()` | `split.R` | ✓ | Case-level train/test split; reproducible via random_state |
+
+---
 
 ---
 
@@ -91,7 +90,8 @@ Track per-capability progress. Update this file when a capability is added, chan
 | `detect_anomalies()` | `anomaly.py` | ✓ | Isolation Forest; configurable contamination, feature subset, random state |
 | `extract_case_stream()` | `drift.py` | ✓ | Time-ordered per-case metric stream |
 | `detect_drift()` | `drift.py` | ✓ | ADWIN on throughput, event count, activity frequency |
-| `NextActivityPredictor` | `prediction.py` | ✓ | LSTM; fit/predict/evaluate; optional dep `pip install processmine-ml[ml]` |
+| `NextActivityPredictor` | `prediction.py` | ✓ | LSTM; fit/predict/evaluate/save/load; optional dep `pip install processmine-ml[ml]` |
+| `train_test_split_by_case()` | `split.py` | ✓ | Case-level train/test split; reproducible via random_state |
 
 ---
 
