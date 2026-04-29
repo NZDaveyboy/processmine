@@ -52,7 +52,16 @@ Track per-capability progress. Update this file when a capability is added, chan
 | `variants()` | `variants.R` | ✓ | All unique activity sequences with frequency |
 | `rare_paths()` | `variants.R` | ✓ | Variants below a support threshold |
 
-### Planned (Milestone 3+)
+### Bridge — R → Python (Milestone 4)
+
+| Capability | File | Status | Notes |
+|---|---|---|---|
+| `bridge_anomalies()` | `bridge.R` | ✓ | Calls Python Isolation Forest via reticulate |
+| `bridge_drift()` | `bridge.R` | ✓ | Calls Python ADWIN drift detector via reticulate |
+| `bridge_fit_predictor()` / `bridge_predict()` / `bridge_evaluate()` | `bridge.R` | ✓ | Calls Python LSTM via reticulate; requires `[ml]` |
+| `bridge_conformance_alignment()` | `bridge.R` + `align.py` | ✓ | PM4Py alignment conformance; requires `[pm4py]` |
+
+### Planned (future)
 
 | Capability | Status | Notes |
 |---|---|---|

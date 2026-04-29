@@ -16,6 +16,9 @@ dependencies = [
 ml = [
     "torch>=2.2",
 ]
+pm4py = [
+    "pm4py>=2.7",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov",

@@ -105,10 +105,13 @@ jobs:
             any::arrow
 
       - name: Install Python package
-        run: pip install -e "./python"
+        run: pip install -e "./python[ml]"
 
       - name: Run schema round-trip
         run: Rscript scripts/roundtrip_check.R
+
+      - name: Run R bridge tests
+        run: Rscript -e "devtools::test('R', filter='bridge')"
         env:
           OMP_NUM_THREADS: '1'
           RETICULATE_PYTHON: ${{ env.pythonLocation }}/bin/python

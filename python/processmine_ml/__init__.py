@@ -1,5 +1,6 @@
 """processmine_ml — Python ML layer for the processmine process-mining library."""
 
+from processmine_ml.align import conformance_alignments
 from processmine_ml.anomaly import detect_anomalies, extract_case_features
 from processmine_ml.drift import detect_drift, extract_case_stream
 from processmine_ml.prediction import NextActivityPredictor
@@ -20,4 +21,5 @@ __all__ = [
     "extract_case_stream",
     "detect_drift",
     "NextActivityPredictor",
+    "conformance_alignments",
 ]

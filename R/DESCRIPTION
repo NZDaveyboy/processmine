@@ -19,5 +19,6 @@ Imports:
     rlang
 Suggests:
     testthat (>= 3.0.0),
-    devtools
+    devtools,
+    reticulate
 Config/testthat/edition: 3
