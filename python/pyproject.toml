@@ -1,6 +1,6 @@
 [project]
 name = "processmine-ml"
-version = "0.0.1"
+version = "0.1.0"
 description = "Python ML layer for the processmine process-mining library."
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -25,6 +25,9 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
     "pandas-stubs",
+    "papermill>=2.5",
+    "matplotlib>=3.8",
+    "jupyter>=1.0",
 ]
 
 [build-system]

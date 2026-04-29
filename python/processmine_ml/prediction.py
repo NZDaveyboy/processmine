@@ -109,12 +109,15 @@ class NextActivityPredictor:
     """
 
     def __init__(self) -> None:
-        self._model:      Optional[Any]       = None
-        self._act_to_idx: dict[str, int]      = {}
-        self._idx_to_act: dict[int, str]      = {}
-        self._max_seq_len: int                = 0
-        self._n_acts:      int                = 0
-        self._fitted:      bool               = False
+        self._model:         Optional[Any]  = None
+        self._act_to_idx:    dict[str, int] = {}
+        self._idx_to_act:    dict[int, str] = {}
+        self._max_seq_len:   int            = 0
+        self._n_acts:        int            = 0
+        self._hidden_size:   int            = 0
+        self._num_layers:    int            = 0
+        self._embedding_dim: int            = 0
+        self._fitted:        bool           = False
 
     # ------------------------------------------------------------------ fit --
 
@@ -161,9 +164,12 @@ class NextActivityPredictor:
         self._n_acts     = len(activities)
         self._act_to_idx = {a: i + 1 for i, a in enumerate(activities)}
         self._idx_to_act = {i + 1: a  for i, a in enumerate(activities)}
-        self._max_seq_len = min(max_seq_len, max(
+        self._max_seq_len    = min(max_seq_len, max(
             len(grp) for _, grp in df.groupby("case_id")
         ))
+        self._hidden_size    = hidden_size
+        self._num_layers     = num_layers
+        self._embedding_dim  = embedding_dim
 
         # Build (prefix, next_activity) pairs
         prefixes: list[list[int]] = []
@@ -304,3 +310,89 @@ class NextActivityPredictor:
             "top3_accuracy": top3_correct / n,
             "n_prefixes":    float(n),
         }
+
+    # ----------------------------------------------------------------- save --
+
+    def save(self, path: "str | Path") -> None:
+        """Persist the fitted predictor to a file.
+
+        Saves model weights, vocabulary, and architecture config using
+        ``torch.save``. Restore with :meth:`load`.
+
+        Args:
+            path: Destination file path (conventionally ``.pt``).
+
+        Raises:
+            RuntimeError: If called before :meth:`fit`.
+        """
+        _require_torch()
+        if not self._fitted or self._model is None:
+            raise RuntimeError("Cannot save an unfitted predictor. Call fit() first.")
+        torch.save(
+            {
+                "schema_version": "1.0",
+                "act_to_idx":     self._act_to_idx,
+                "idx_to_act":     self._idx_to_act,
+                "max_seq_len":    self._max_seq_len,
+                "n_acts":         self._n_acts,
+                "model_config": {
+                    "vocab_size":     self._n_acts + 1,
+                    "embedding_dim":  self._embedding_dim,
+                    "hidden_size":    self._hidden_size,
+                    "num_layers":     self._num_layers,
+                    "n_classes":      self._n_acts,
+                },
+                "model_state": self._model.state_dict(),
+            },
+            str(path),
+        )
+
+    # ----------------------------------------------------------------- load --
+
+    @classmethod
+    def load(cls, path: "str | Path") -> "NextActivityPredictor":
+        """Restore a predictor saved with :meth:`save`.
+
+        Args:
+            path: Path to a ``.pt`` file written by :meth:`save`.
+
+        Returns:
+            A fitted :class:`NextActivityPredictor` ready for :meth:`predict`
+            and :meth:`evaluate`.
+
+        Raises:
+            ValueError: If the file was written by an incompatible version.
+        """
+        _require_torch()
+        # weights_only=False required because we pickle non-tensor Python dicts.
+        checkpoint = torch.load(str(path), map_location="cpu", weights_only=False)
+
+        version = checkpoint.get("schema_version", "unknown")
+        if version != "1.0":
+            raise ValueError(
+                f"Unsupported predictor file version {version!r}. "
+                "Re-train with the current version of processmine-ml."
+            )
+
+        p = cls()
+        p._act_to_idx    = checkpoint["act_to_idx"]
+        p._idx_to_act    = checkpoint["idx_to_act"]
+        p._max_seq_len   = checkpoint["max_seq_len"]
+        p._n_acts        = checkpoint["n_acts"]
+
+        cfg              = checkpoint["model_config"]
+        p._embedding_dim = cfg["embedding_dim"]
+        p._hidden_size   = cfg["hidden_size"]
+        p._num_layers    = cfg["num_layers"]
+
+        p._model = _LSTMModel(
+            vocab_size    = cfg["vocab_size"],
+            embedding_dim = cfg["embedding_dim"],
+            hidden_size   = cfg["hidden_size"],
+            num_layers    = cfg["num_layers"],
+            n_classes     = cfg["n_classes"],
+        )
+        p._model.load_state_dict(checkpoint["model_state"])
+        p._model.eval()
+        p._fitted = True
+        return p

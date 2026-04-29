@@ -101,7 +101,8 @@ Track per-capability progress. Update this file when a capability is added, chan
 |---|---|
 | `test-r` (R CMD check) | ✓ passing |
 | `test-python` (ruff + mypy + pytest) | ✓ passing |
-| `roundtrip` | ✓ passing |
+| `notebooks` (papermill Python notebook) | ✓ |
+| `roundtrip` (schema + bridge tests + R notebook render) | ✓ passing |
 
 ---
 

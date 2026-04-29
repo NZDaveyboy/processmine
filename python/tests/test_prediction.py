@@ -179,3 +179,56 @@ def test_fit_predict_reproducible():
     p1  = NextActivityPredictor().fit(log, random_state=7, **_SMALL_FIT_KWARGS)
     p2  = NextActivityPredictor().fit(log, random_state=7, **_SMALL_FIT_KWARGS)
     pd.testing.assert_frame_equal(p1.predict(["A"]), p2.predict(["A"]))
+
+
+# ---- save / load -------------------------------------------------------------
+
+def test_save_creates_file(tmp_path):
+    log  = make_deterministic_log(n_repeats=5)
+    p    = NextActivityPredictor().fit(log, **_SMALL_FIT_KWARGS)
+    dest = tmp_path / "model.pt"
+    p.save(dest)
+    assert dest.exists()
+    assert dest.stat().st_size > 0
+
+
+def test_load_restores_fitted_predictor(tmp_path):
+    log  = make_deterministic_log(n_repeats=5)
+    p    = NextActivityPredictor().fit(log, **_SMALL_FIT_KWARGS)
+    dest = tmp_path / "model.pt"
+    p.save(dest)
+
+    p2 = NextActivityPredictor.load(dest)
+    assert p2._fitted
+    assert set(p2._act_to_idx.keys()) == {"A", "B", "C"}
+
+
+def test_load_predictions_match_original(tmp_path):
+    log  = make_deterministic_log(n_repeats=10)
+    p    = NextActivityPredictor().fit(log, random_state=0, **_SMALL_FIT_KWARGS)
+    dest = tmp_path / "model.pt"
+    p.save(dest)
+
+    p2 = NextActivityPredictor.load(dest)
+    pd.testing.assert_frame_equal(p.predict(["A"]), p2.predict(["A"]))
+
+
+def test_save_before_fit_raises():
+    p = NextActivityPredictor()
+    with pytest.raises(RuntimeError, match="fit"):
+        p.save("/tmp/should_not_exist.pt")
+
+
+def test_load_rejects_wrong_version(tmp_path):
+    log  = make_deterministic_log(n_repeats=5)
+    p    = NextActivityPredictor().fit(log, **_SMALL_FIT_KWARGS)
+    dest = tmp_path / "model.pt"
+    p.save(dest)
+
+    # Corrupt the version field
+    checkpoint = torch.load(str(dest), map_location="cpu", weights_only=False)
+    checkpoint["schema_version"] = "99.0"
+    torch.save(checkpoint, str(dest))
+
+    with pytest.raises(ValueError, match="version"):
+        NextActivityPredictor.load(dest)

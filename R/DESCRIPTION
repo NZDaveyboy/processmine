@@ -1,6 +1,6 @@
 Package: processmine
 Title: Production-Grade Process Mining in R and Python
-Version: 0.0.1
+Version: 0.1.0
 Authors@R: person("Dave", "Mason", role = c("aut", "cre"),
                    email = "davidmason720@gmail.com")
 Description: R interface to the processmine event-log schema: read/write XES and
