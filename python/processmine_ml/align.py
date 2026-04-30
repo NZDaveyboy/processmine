@@ -26,7 +26,7 @@ _COL_TS    = "time:timestamp"
 
 def _import_pm4py() -> Any:
     try:
-        import pm4py  # type: ignore[import-untyped]
+        import pm4py  # type: ignore[import-untyped,import-not-found]
         return pm4py
     except ImportError as exc:
         raise ImportError(
@@ -44,7 +44,8 @@ def _to_pm4py_df(df: pd.DataFrame) -> pd.DataFrame:
         "timestamp": _COL_TS,
     })
     # PM4Py 2.7.x is most stable with tz-naive timestamps
-    if hasattr(out[_COL_TS].dtype, "tz") and out[_COL_TS].dtype.tz is not None:
+    ts_dtype = out[_COL_TS].dtype
+    if isinstance(ts_dtype, pd.DatetimeTZDtype) and ts_dtype.tz is not None:
         out[_COL_TS] = out[_COL_TS].dt.tz_localize(None)
     return out.sort_values([_COL_CASE, _COL_TS])
 

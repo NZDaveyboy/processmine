@@ -246,15 +246,15 @@ def read_csv_eventlog(
         df["lifecycle"] = raw[lifecycle_col].astype(str)
 
     if case_attrs_cols:
-        df["case_attrs"] = [
-            {col: str(raw[col].iloc[i]) for col in case_attrs_cols}
-            for i in range(len(raw))
-        ]
+        df["case_attrs"] = pd.Series(
+            [{col: str(raw[col].iloc[i]) for col in case_attrs_cols} for i in range(len(raw))],
+            dtype=object,
+        )
     if event_attrs_cols:
-        df["event_attrs"] = [
-            {col: str(raw[col].iloc[i]) for col in event_attrs_cols}
-            for i in range(len(raw))
-        ]
+        df["event_attrs"] = pd.Series(
+            [{col: str(raw[col].iloc[i]) for col in event_attrs_cols} for i in range(len(raw))],
+            dtype=object,
+        )
 
     return validate_eventlog(df)
 
@@ -264,9 +264,9 @@ def _parse_csv_timestamps(
 ) -> pd.Series:
     """Parse a string series to datetime64[us, UTC]."""
     parsed = pd.to_datetime(series, format=fmt, utc=(tz == "UTC"))
-    if not hasattr(parsed.dtype, "tz"):
+    if not isinstance(parsed.dtype, pd.DatetimeTZDtype):
         parsed = parsed.dt.tz_localize(tz)
-    if str(parsed.dtype.tz) != "UTC":
+    if str(parsed.dtype.tz) != "UTC":  # type: ignore[union-attr]
         parsed = parsed.dt.tz_convert("UTC")
     return parsed.dt.as_unit("us")
 
