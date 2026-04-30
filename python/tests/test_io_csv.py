@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import io
 import textwrap
 
-import pandas as pd
 import pytest
 
 from processmine_ml.io import read_csv_eventlog
